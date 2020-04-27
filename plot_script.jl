@@ -11,8 +11,18 @@ using PiecewisePlotting, Plots
 # package, so you can style the lines, add labels, etc.
 
 # this function creates a new plot
-plot_pwcs(load_pwc_dir("./demo_data/plot1", 1.0; extension="out"); label="plot1")
+plot1_pwcs = load_pwc_dir("./demo_data/plot1", 1.0; extension = "out")
+plot_pwcs(plot1_pwcs, label = "plot1")
+plot1_mean_pwc = get_mean_pwc(plot1_pwcs)
+# this line finds the interval with minimum value and shows it
+plot1_min_interval, plot1_min_value = find_minimizer(plot1_mean_pwc)
+println("Plot 1 min interval = $(plot1_min_interval) has value $(plot1_min_value)")
+println("Plot 1 value at x=0.5 is $(plot1_mean_pwc(0.5))")
+
 # this function adds a curve to an existing plot
-plot_pwcs!(load_pwc_dir("./demo_data/plot2", 1.0; extension="out"); label="plot2")
+plot_pwcs!(
+    load_pwc_dir("./demo_data/plot2", 1.0; extension = "out");
+    label = "plot2",
+)
 # save the plot
 savefig("plot.pdf")

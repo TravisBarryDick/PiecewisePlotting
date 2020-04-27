@@ -3,7 +3,8 @@ module PiecewisePlotting
 using DelimitedFiles, PiecewiseTools, Plots, Glob
 import Statistics
 
-export load_pwc, load_pwc_dir, plot_pwcs!, plot_pwcs
+export load_pwc,
+    load_pwc_dir, plot_pwcs!, plot_pwcs, get_mean_pwc, find_minimizer
 
 """
 `load_pwc(path, range_bound)` loads a `Piecewise{T}` from the .csv file located
@@ -58,5 +59,25 @@ function plot_pwcs!(pwcs; samples = 1000, options...)
 end
 
 plot_pwcs(args...; options...) = (plot(); plot_pwcs!(args...; options...))
+
+function get_mean_pwc(pwcs)
+    # Drop the file names from the PWCs variable and "compress them".
+    # Compressing merges neighboring intervals that have exactly the same value.
+    pwcs = [compress(pwc) for pwc in values(pwcs)]
+    # Return a compressed version of the mean PWC
+    return compress(PiecewiseTools.mean(pwcs))
+end
+
+function find_minimizer(pwc)
+    best_interval = Interval(0, 0)
+    best_value = Inf
+    for (ivl, v) in PieceIterator(pwc)
+        if v < best_value
+            best_interval = ivl
+            best_value = v
+        end
+    end
+    return best_interval, best_value
+end
 
 end
