@@ -12,7 +12,7 @@ using PiecewisePlotting, Plots
 
 # this function creates a new plot
 plot1_pwcs = load_pwc_dir("./demo_data/plot1", 1.0; extension = "out")
-plot_pwcs(plot1_pwcs, label = "plot1")
+plot_pwcs(plot1_pwcs, label = "plot1"; xlabel="the x label!", ylabel="the y label!")
 plot1_mean_pwc = get_mean_pwc(plot1_pwcs)
 # this line finds the interval with minimum value and shows it
 plot1_min_interval, plot1_min_value = find_minimizer(plot1_mean_pwc)
