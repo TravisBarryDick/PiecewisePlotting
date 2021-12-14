@@ -3,8 +3,8 @@ module PiecewisePlotting
 using DelimitedFiles, PiecewiseTools, Plots, Glob
 import Statistics
 
-export load_pwc,
-    load_pwc_dir, plot_pwcs!, plot_pwcs, get_mean_pwc, find_minimizer
+export load_pwc, load_pwc_dir, plot_pwcs!, plot_pwcs, get_mean_pwc, find_minimizer
+export plot_mean_with_stderr!, plot_geomean!, plot_mean!
 
 """
 `load_pwc(path, range_bound)` loads a `Piecewise{T}` from the .csv file located
@@ -43,22 +43,48 @@ of file loaded. For example `load_pwc_dir(path, range_bound; extension="csv")`
 will read .csv files rather than .txt files. This does not change how the files
 are interpreted.
 """
-load_pwc_dir(path, range_bound; extension = "txt") = Dict(
-    name => load_pwc(name, range_bound)
-    for name in glob("*.$(extension)", path)
-)
+load_pwc_dir(path, range_bound; extension = "txt") =
+    Dict(name => load_pwc(name, range_bound) for name in glob("*.$(extension)", path))
 
-function plot_pwcs!(pwcs; samples = 1000, options...)
+function sample_pwcs(pwcs, samples)
     pwcs = collect(values(pwcs))
-    # Get the x points we will plot the function values at
     xs = sample(pwcs[1], samples)[1]
-    # Sample y points from each pwc and average them
-    ys = Statistics.mean(sample(pwc, samples)[2] for pwc in pwcs)
-    # Plot the curve
+    sample_vals = Array{Float64}(undef, length(pwcs), samples)
+    for (i, pwc) in enumerate(pwcs)
+        sample_vals[i, :] = sample(pwc, samples)[2]
+    end
+    return xs, sample_vals
+end
+
+function plot_mean!(pwcs; samples = 1000, options...)
+    xs, sample_vals = sample_pwcs(pwcs, samples)
+    ys = vec(Statistics.mean(sample_vals, dims = 1))
     plot!(xs, ys; options...)
 end
 
-plot_pwcs(args...; options...) = (plot(); plot_pwcs!(args...; options...))
+function plot_mean_with_stderr!(pwcs; samples = 1000, options...)
+    xs, sample_vals = sample_pwcs(pwcs, samples)
+    ys = vec(Statistics.mean(sample_vals, dims = 1))
+    σs = vec(Statistics.std(sample_vals, dims = 1))
+    stderrs = σs / sqrt(length(pwcs))
+    plot!(xs, ys; ribbon = stderrs, options...)
+end
+
+function plot_geomean!(pwcs; samples = 1000, options...)
+    xs, sample_vals = sample_pwcs(pwcs, samples)
+    ys = [geomean(sample_vals[:, i]) for i = 1:size(sample_vals, 2)]
+    plot!(xs, ys; options...)
+end
+
+function geomean(xs)
+    log_geomean = 0.0
+    n = length(xs)
+    for x in xs
+        log_geomean += log(x)
+    end
+    log_geomean /= n
+    return exp(log_geomean)
+end
 
 function get_mean_pwc(pwcs)
     # Drop the file names from the PWCs variable and "compress them".
